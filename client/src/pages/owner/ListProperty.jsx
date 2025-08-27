@@ -1,14 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
-import { dummyProperties } from "../../assets/data";
+import toast from "react-hot-toast";
 
 const ListProperty = () => {
   const [properties, setProperties] = useState([]);
-  const { user, currency } = useAppContext();
+  const { axios, getToken, user, currency } = useAppContext();
 
   // get properties of the agency owner
   const getProperties = async () => {
-    setProperties(dummyProperties);
+    try {
+      const { data } = await axios.get("/api/properties/owner", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        setProperties(data.properties);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  // toggle availability of the property
+  const toggleAvailability = async (propertyId) => {
+    const { data } = await axios.post("/api/properties/toggle-availability", {propertyId}, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+
+    if (data.success) {
+      toast.success(data.message);
+      getProperties()
+    } else {
+      toast.error(data.message);
+    }
   };
 
   useEffect(() => {
@@ -53,6 +79,7 @@ const ListProperty = () => {
               <div>
                 <label className="relative inline-flex items-center cursor-pointer text-gray-900 gap-3">
                   <input
+                    onChange={() => toggleAvailability(property._id)}
                     type="checkbox"
                     className="sr-only peer"
                     defaultChecked={property.isAvailable}

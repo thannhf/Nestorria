@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { assets, dummyDashboardData } from "../../assets/data";
+import toast from "react-hot-toast";
 
 const Dashboard = () => {
-  const { user, currency } = useAppContext();
+  const { user, currency, axios, getToken } = useAppContext();
   const [dashboardData, setDashboardData] = useState({
     bookings: [],
     totalBookings: 0,
@@ -11,11 +12,25 @@ const Dashboard = () => {
   });
 
   const getDashboardData = async () => {
-    setDashboardData(dummyDashboardData);
+    try {
+      const { data } = await axios.get("/api/bookings/agency", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        setDashboardData(data.dashboardData);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {
-    getDashboardData();
+    if (user) {
+      getDashboardData();
+    }
   }, [user]);
 
   return (
@@ -25,7 +40,7 @@ const Dashboard = () => {
           <img src={assets.house} alt="" className="hidden sm:flex w-8" />
           <div>
             <h4 className="h4">
-              {dashboardData.totalBookings.toString().padStart(2, "0")}
+              {dashboardData?.totalBookings?.toString().padStart(2, "0")}
             </h4>
             <h5 className="h5 text-secondary">Total Sales</h5>
           </div>
@@ -35,7 +50,7 @@ const Dashboard = () => {
           <div>
             <h4 className="h4">
               {currency}
-              {dashboardData.totalRevenue}
+              {dashboardData?.totalRevenue || 0}
             </h4>
             <h5 className="h5 text-secondary">Total Earnings</h5>
           </div>
@@ -52,7 +67,10 @@ const Dashboard = () => {
         </div>
         <div>
           {dashboardData.bookings.map((booking, index) => (
-            <div key={index} className="flex justify-between items-center flex-wrap gap-2 sm:grid grid-cols-[2fr_2fr_1fr_1fr] lg:grid-cols-[0.5fr_2fr_2fr_1fr_1fr] px-6 py-3 bg-secondary/5 text-gray-50 medium-14 border-b-1 border-slate-900/15">
+            <div
+              key={index}
+              className="flex justify-between items-center flex-wrap gap-2 sm:grid grid-cols-[2fr_2fr_1fr_1fr] lg:grid-cols-[0.5fr_2fr_2fr_1fr_1fr] px-6 py-3 bg-secondary/5 text-gray-50 medium-14 border-b-1 border-slate-900/15"
+            >
               <div className="hidden lg:block">{index + 1}</div>
               <div className="flexStart gap-x-2 max-w-64">
                 <div className="overflow-hidden rounded-lg">

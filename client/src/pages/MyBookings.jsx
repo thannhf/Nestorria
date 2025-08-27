@@ -1,14 +1,27 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { assets, dummyBookingsData } from "../assets/data";
+import toast from "react-hot-toast";
 
 const MyBookings = () => {
   const [bookings, setBookings] = useState([]);
-  const { currency, user } = useAppContext();
+  const { currency, user, axios, getToken } = useAppContext();
 
-  const getUserBooking = () => {
-    setBookings(dummyBookingsData);
+  const getUserBooking = async () => {
+    try {
+      const { data } = await axios.get("/api/bookings/user", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+      if (data.success) {
+        setBookings(data.bookings);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
+
   useEffect(() => {
     if (user) {
       getUserBooking();
@@ -18,7 +31,10 @@ const MyBookings = () => {
   return (
     <div className="max-padd-container bg-gradient-to-r from-[#fffbee] to-white py-16 pt-28">
       {bookings?.map((booking) => (
-        <div key={booking._id} className="bg-white ring-1 ring-slate-900/5 p-2 pr-4 mt-3 rounded-lg">
+        <div
+          key={booking._id}
+          className="bg-white ring-1 ring-slate-900/5 p-2 pr-4 mt-3 rounded-lg"
+        >
           {/* Property List */}
           <div className="flexStart gap-3 mb-3">
             <img
@@ -58,25 +74,35 @@ const MyBookings = () => {
               </div>
               <div className="flex items-center gap-x-2">
                 <h5 className="medium-14">Check-In:</h5>
-                <p className="text-gray-400 text-xs">{new Date(booking.checkInDate).toDateString()}</p>
+                <p className="text-gray-400 text-xs">
+                  {new Date(booking.checkInDate).toDateString()}
+                </p>
               </div>
               <div className="flex items-center gap-x-2">
                 <h5 className="medium-14">Check-Out:</h5>
-                <p className="text-gray-400 text-xs">{new Date(booking.checkOutDate).toDateString()}</p>
+                <p className="text-gray-400 text-xs">
+                  {new Date(booking.checkOutDate).toDateString()}
+                </p>
               </div>
             </div>
             <div className="flex gap-2 gap-x-3">
               <div className="flex items-center gap-x-2">
                 <h5 className="medium-14">Payment:</h5>
                 <div className="flex items-center gap-1">
-                  <span className={`min-w-2.5 h-2.5 rounded-full ${booking.isPaid ? "bg-green-500" : "bg-yellow-500"}`} />
+                  <span
+                    className={`min-w-2.5 h-2.5 rounded-full ${
+                      booking.isPaid ? "bg-green-500" : "bg-yellow-500"
+                    }`}
+                  />
                   <p>{booking.isPaid ? "Paid" : "UnPaid"}</p>
                 </div>
               </div>
               {!booking.isPaid && (
-                <button className="btn-secondary !py-1 !text-xs rounded-sm">Pay Now</button>
+                <button className="btn-secondary !py-1 !text-xs rounded-sm">
+                  Pay Now
+                </button>
               )}
-            </div>  
+            </div>
           </div>
         </div>
       ))}

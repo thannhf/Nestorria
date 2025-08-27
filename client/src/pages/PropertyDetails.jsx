@@ -3,11 +3,79 @@ import { useAppContext } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import PropertyImages from "../components/PropertyImages";
 import { assets } from "../assets/data";
+import toast from "react-hot-toast";
 
 const PropertyDetails = () => {
-  const { currency, properties } = useAppContext();
+  const { currency, properties, navigate, axios, getToken } = useAppContext();
   const [property, setProperty] = useState(null);
   const { id } = useParams();
+  const [checkInDate, setCheckInDate] = useState(null);
+  const [checkOutDate, setCheckOutDate] = useState(null);
+  const [guests, setGuests] = useState(1);
+  const [isAvailable, setIsAvailable] = useState(false);
+
+  // check availability
+  const checkAvailability = async () => {
+    try {
+      // check is checkInDate is greater than checkOutDate
+      if (checkInDate > checkOutDate) {
+        toast.error("CheckInDate should be less than checkOutDate");
+      }
+      const { data } = await axios.post("/api/bookings/check-availability", {
+        property: id,
+        checkInDate,
+        checkOutDate,
+      });
+
+      if (data.success) {
+        if (data.isAvailable) {
+          setIsAvailable(true);
+          toast.success("Property is Available");
+        } else {
+          setIsAvailable(false);
+          toast.error("Property is not Available");
+        }
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  // book property if isAvailable
+  const onSubmitHandler = async (e) => {
+    try {
+      e.preventDefault();
+      if (!isAvailable) {
+        return checkAvailability();
+      } else {
+        const { data } = await axios.post(
+          "/api/bookings/book",
+          {
+            property: id,
+            checkInDate,
+            checkOutDate,
+            guests,
+            paymentMethod: "Pay at Check-in",
+          },
+          {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          }
+        );
+
+        if (data.success) {
+          toast.success(data.message);
+          navigate("/my-bookings");
+          scrollTo(0, 0);
+        } else {
+          toast.error(data.message);
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   useEffect(() => {
     const property = properties.find((property) => property._id === id);
@@ -31,7 +99,9 @@ const PropertyDetails = () => {
               <div className="flex justify-between flex-col sm:flex-row sm:items-end mt-3">
                 <h3 className="h3">{property.title}</h3>
                 <div className="bold-18">
-                  {currency}{property.price.sale} | {currency}{property.price.rent}.00/night
+                  {currency}
+                  {property.price.sale} | {currency}
+                  {property.price.rent}.00/night
                 </div>
               </div>
               <div className="flex justify-between items-start my-1">
@@ -81,13 +151,18 @@ const PropertyDetails = () => {
                 ))}
               </div>
               {/* Form Check Availability */}
-              <form className="text-gray-500 bg-secondary/10 rounded-lg px-6 py-4 flex flex-col lg:flex-row gap-4 max-w-md lg:max-w-full ring-1 ring-slate-900/5 relative mt-10">
+              <form
+                onSubmit={onSubmitHandler}
+                className="text-gray-500 bg-secondary/10 rounded-lg px-6 py-4 flex flex-col lg:flex-row gap-4 max-w-md lg:max-w-full ring-1 ring-slate-900/5 relative mt-10"
+              >
                 <div className="flex flex-col w-full">
                   <div className="flex items-center gap-2">
                     <img src={assets.calendar} alt="calendarIcon" width={20} />
                     <label htmlFor="checkInDate">Check in</label>
                   </div>
                   <input
+                    onChange={(e) => setCheckInDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
                     type="date"
                     id="checkInDate"
                     className="rounded bg-secondary/10 border-gray-200 px-3 py-1.5 mt-1.5 text-sm outline-none"
@@ -99,8 +174,11 @@ const PropertyDetails = () => {
                     <label htmlFor="checkOutDate">Check out</label>
                   </div>
                   <input
+                    onChange={(e)=>setCheckOutDate(e.target.value)}
+                    min={checkInDate}
                     type="date"
                     id="checkOutDate"
+                    disabled={!checkInDate}
                     className="rounded bg-secondary/10 border-gray-200 px-3 py-1.5 mt-1.5 text-sm outline-none"
                   />
                 </div>
@@ -110,6 +188,8 @@ const PropertyDetails = () => {
                     <label htmlFor="guests">Guests</label>
                   </div>
                   <input
+                    onChange={(e) => setGuests(e.target.value)}
+                    value={guests}
                     id="guests"
                     type="number"
                     min={1}
@@ -128,7 +208,7 @@ const PropertyDetails = () => {
                     width={20}
                     className="invert"
                   />
-                  <span>Search</span>
+                  <span>{isAvailable ? "Book Property" : "Check Dates"}</span>
                 </button>
               </form>
             </div>
@@ -165,14 +245,20 @@ const PropertyDetails = () => {
                 <h4 className="h4 mb-3 mt-8">For Buying Contact</h4>
                 <div className="text-sm w-80 divide-y divide-gray-500/30 border border-gray-500/30 rounded">
                   <div className="flex items-start justify-between p-3">
-                    <div>   
+                    <div>
                       <div className="flex items-center space-x-2">
                         <h5 className="h5">{property.agency.name}</h5>
-                        <p className="bg-green-500/20 px-2 py-0.5 rounded-full text-xs text-green-600 border border-green-500/30">Agency</p>
+                        <p className="bg-green-500/20 px-2 py-0.5 rounded-full text-xs text-green-600 border border-green-500/30">
+                          Agency
+                        </p>
                       </div>
                       <p>Agency Office</p>
                     </div>
-                    <img src={property.agency.owner.image} alt="" className="h-10 w-10 rounded-full" />
+                    <img
+                      src={property.agency.owner.image}
+                      alt=""
+                      className="h-10 w-10 rounded-full"
+                    />
                   </div>
                   <div className="flexStart gap-2 p-1.5">
                     <div className="bg-green-500/20 p-1 rounded-full border border-green-500/30">
