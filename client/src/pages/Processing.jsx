@@ -7,6 +7,14 @@ const Processing = () => {
     const {navigate} = useAppContext()
     const {nextUrl} = useParams()
 
+    useEffect(() => {
+        if(nextUrl) {
+            setTimeout(() => {
+                navigate(`/${nextUrl}`)
+            }, 8000);
+        }
+    }, [nextUrl])
+
 
     return (
         <div className='flexCenter h-screen'>

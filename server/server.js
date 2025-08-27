@@ -9,12 +9,16 @@ import agencyRouter from "./routes/agencyRoute.js"
 import propertyRouter from "./routes/propertyRoute.js"
 import bookingRouter from "./routes/bookingRoute.js"
 import connectCloudinary from "./config/cloudinary.js"
+import { stripeWebhooks } from "./controllers/stripeWebhooks.js"
 
 await connectDB() // Establish connection to the database
 await connectCloudinary() // setup cloudinary for image storage
 
 const app = express() //Initialize Express Application
 app.use(cors()) // Enables Cross_Origin Resource sharing
+
+// API to listen to stripe webhooks
+app.post('/api/stripe', express.raw({type: "application/json"}), stripeWebhooks)
 
 // middleware setup
 app.use(express.json()) //Enables json request body parsing
