@@ -11,3 +11,4 @@ cloudinary
 nodemon
 nodemailer
 brevo
+stripe

@@ -15,6 +15,7 @@ import Dashboard from './pages/owner/Dashboard'
 import AddProperty from './pages/owner/AddProperty'
 import ListProperty from './pages/owner/ListProperty'
 import { Toaster } from "react-hot-toast"
+import Processing from './pages/Processing'
 
 const App = () => {
   const {showAgencyReg} = useAppContext()
@@ -33,6 +34,7 @@ const App = () => {
         <Route path='/blog' element={<Blog />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/my-bookings' element={<MyBookings />} />
+        <Route path='/processing/:nextUrl' element={<Processing />} />
         <Route path='/owner' element={<Sidebar />}>
           <Route index element={<Dashboard />} />
           <Route path='/owner/add-property' element={<AddProperty />} />
